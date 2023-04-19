@@ -59,9 +59,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     FAST_TASK(update_control_mode),
     FAST_TASK(stabilize),
     FAST_TASK(set_servos),
-    SCHED_TASK(read_radio,             50,    100,   6),
+    SCHED_TASK(read_radio,             100,    100,   6), // original 50
     SCHED_TASK(check_short_failsafe,   50,    100,   9),
-    SCHED_TASK(update_speed_height,    50,    200,  12),
+    SCHED_TASK(update_speed_height,    100,    200,  12), // original 50
     SCHED_TASK(update_throttle_hover, 100,     90,  24),
     SCHED_TASK(read_control_switch,     7,    100,  27),
     SCHED_TASK(update_GPS_50Hz,        50,    300,  30),
@@ -69,7 +69,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(navigate,               10,    150,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
     SCHED_TASK(calc_airspeed_errors,   10,    100,  42),
-    SCHED_TASK(update_alt,             10,    200,  45),
+    SCHED_TASK(update_alt,             100,    200,  45), // original 10
     SCHED_TASK(adjust_altitude_target, 10,    200,  48),
 #if AP_ADVANCEDFAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    100,  51),
@@ -78,10 +78,10 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(GCS,            (GCS*)&plane._gcs,       update_receive,   300,  500,  57),
     SCHED_TASK_CLASS(GCS,            (GCS*)&plane._gcs,       update_send,      300,  750,  60),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &plane.ServoRelayEvents, update_events, 50, 150,  63),
-    SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read,   10, 300,  66),
-    SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate,  50, 150,  69),
+    SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read,   100, 300,  66), // original 10
+    SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate,  100, 150,  69), // original 50
     SCHED_TASK_CLASS(AP_Notify,      &plane.notify,  update, 50, 300,  72),
-    SCHED_TASK(read_rangefinder,       50,    100, 78),
+    SCHED_TASK(read_rangefinder,       100,    100, 78), // original 50
 #if AP_ICENGINE_ENABLED
     SCHED_TASK_CLASS(AP_ICEngine,      &plane.g2.ice_control, update,     10, 100,  81),
 #endif
@@ -92,7 +92,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(three_hz_loop,           3,     75,  93),
     SCHED_TASK(check_long_failsafe,     3,    400,  96),
 #if AP_RPM_ENABLED
-    SCHED_TASK_CLASS(AP_RPM,           &plane.rpm_sensor,     update,     10, 100,  99),
+    SCHED_TASK_CLASS(AP_RPM,           &plane.rpm_sensor,     update,     100, 100,  99), // original 10
 #endif
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     SCHED_TASK(airspeed_ratio_update,   1,    100,  102),
@@ -106,8 +106,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100, 111),
     SCHED_TASK(compass_save,          0.1,    200, 114),
     SCHED_TASK(Log_Write_FullRate,        400,    300, 117),
-    SCHED_TASK(update_logging10,        10,    300, 120),
-    SCHED_TASK(update_logging25,        25,    300, 123),
+    SCHED_TASK(update_logging10,        100,    300, 120), // original 10
+    SCHED_TASK(update_logging25,        100,    300, 123), // original 25
 #if HAL_SOARING_ENABLED
     SCHED_TASK(update_soaring,         50,    400, 126),
 #endif
@@ -117,7 +117,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // AP_TERRAIN_AVAILABLE
     SCHED_TASK(update_is_flying_5Hz,    5,    100, 135),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Logger,         &plane.logger, periodic_tasks, 50, 400, 138),
+    SCHED_TASK_CLASS(AP_Logger,         &plane.logger, periodic_tasks, 100, 400, 138), // original 50
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &plane.ins,    periodic,       50,  50, 141),
 #if HAL_ADSB_ENABLED
