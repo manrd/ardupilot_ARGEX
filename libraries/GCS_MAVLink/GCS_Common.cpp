@@ -960,6 +960,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_RPM_ENABLED
         { MAVLINK_MSG_ID_RPM,                   MSG_RPM},
 #endif
+        { 239,                   MSG_MANUEL_1},
+        { 240,                   MSG_MANUEL_2},
         { MAVLINK_MSG_ID_MISSION_ITEM_REACHED,  MSG_MISSION_ITEM_REACHED},
         { MAVLINK_MSG_ID_ATTITUDE_TARGET,       MSG_ATTITUDE_TARGET},
         { MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT,  MSG_POSITION_TARGET_GLOBAL_INT},
@@ -5149,7 +5151,7 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
-#if AP_RPM_ENABLED
+//#if AP_RPM_ENABLED
 void GCS_MAVLINK::send_rpm() const
 {
     AP_RPM *rpm = AP::rpm();
@@ -5171,7 +5173,15 @@ void GCS_MAVLINK::send_rpm() const
         rpm1,
         rpm2);
 }
-#endif  // AP_RPM_ENABLED
+//#endif  // AP_RPM_ENABLED
+
+//void GCS_MAVLINK::send_manuel_1() const
+//{
+//    mavlink_msg_manuel_1_send(
+//        chan,
+//        5,
+//        7);
+//}
 
 void GCS_MAVLINK::send_sys_status()
 {
@@ -5530,6 +5540,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_rpm();
         break;
 #endif
+    case MSG_MANUEL_1:
+        //CHECK_PAYLOAD_SIZE(MANUEL_1);
+        //send_manuel_1();
+        break;
+    case MSG_MANUEL_2:
+        //CHECK_PAYLOAD_SIZE(MANUEL_2);
+        send_manuel_2();
+        break;
 
     case MSG_CURRENT_WAYPOINT:
     case MSG_MISSION_ITEM_REACHED:

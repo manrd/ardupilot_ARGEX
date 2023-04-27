@@ -377,6 +377,8 @@ public:
     void send_sys_status();
     void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
+    //void send_manuel_1() const;
+    void send_manuel_2() const;
     void send_generator_status() const;
     virtual void send_winch_status() const {};
     void send_water_depth() const;

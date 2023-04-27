@@ -618,6 +618,8 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 #if AP_RPM_ENABLED
     MSG_RPM,
 #endif
+    MSG_MANUEL_1,
+    MSG_MANUEL_2,
     MSG_AOA_SSA,
     MSG_PID_TUNING,
     MSG_LANDING,
