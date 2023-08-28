@@ -56,7 +56,7 @@
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 #ifndef GPS_MOVING_BASELINE
-#define GPS_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS>1
 #endif
 
 #ifndef HAL_MSP_GPS_ENABLED
@@ -189,7 +189,7 @@ public:
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
-        float ground_speed;                 ///< ground speed in m/sec
+        float ground_speed;                 ///< ground speed in m/s
         float ground_course;                ///< ground course in degrees
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
         uint32_t gps_yaw_time_ms;           ///< timestamp of last GPS yaw reading
@@ -249,7 +249,11 @@ public:
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
-    void handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt);
+    // Retrieve the first instance ID that is configured as type GPS_TYPE_EXTERNAL_AHRS.
+    // Can be used by external AHRS systems that only report one GPS to get the instance ID.
+    // Returns true if an instance was found, false otherwise.
+    bool get_first_external_instance(uint8_t& instance) const WARN_IF_UNUSED;
+    void handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance);
 #endif
 
     // Accessor functions
@@ -300,7 +304,7 @@ public:
     }
 
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
-    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -717,6 +721,11 @@ private:
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
 
+    struct {
+        uint16_t fragments_used;
+        uint16_t fragments_discarded;
+    } rtcm_stats;
+
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
@@ -725,6 +734,7 @@ private:
     void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
+#if defined(GPS_BLENDED_INSTANCE)
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
@@ -738,6 +748,7 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
+#endif
 
     bool should_log() const;
 

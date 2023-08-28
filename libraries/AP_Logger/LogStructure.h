@@ -131,6 +131,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_InertialSensor/LogStructure.h>
 #include <AP_AHRS/LogStructure.h>
 #include <AP_Camera/LogStructure.h>
+#include <AP_Mount/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
@@ -141,6 +142,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_HAL_ChibiOS/LogStructure.h>
 #include <AP_RPM/LogStructure.h>
 #include <AC_Fence/LogStructure.h>
+#include <AP_Landing/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -491,6 +493,12 @@ struct PACKED log_CSRV {
     float force;
     float speed;
     uint8_t power_pct;
+    float pos_cmd;
+    float voltage;
+    float current;
+    float mot_temp;
+    float pcb_temp;
+    uint8_t error;
 };
 
 struct PACKED log_ARSP {
@@ -567,24 +575,6 @@ struct PACKED log_SRTL {
     uint8_t action;
     float N;
     float E;
-    float D;
-};
-
-struct PACKED log_DSTL {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t stage;
-    float target_heading;
-    int32_t target_lat;
-    int32_t target_lng;
-    int32_t target_alt;
-    int16_t crosstrack_error;
-    int16_t travel_distance;
-    float l1_i;
-    int32_t loiter_sum_cd;
-    float desired;
-    float P;
-    float I;
     float D;
 };
 
@@ -754,6 +744,12 @@ struct PACKED log_VER {
 // @Field: Force: Force being applied
 // @Field: Speed: Current servo movement speed
 // @Field: Pow: Amount of rated power being applied
+// @Field: PosCmd: commanded servo position
+// @Field: V: Voltage
+// @Field: A: Current
+// @Field: MotT: motor temperature
+// @Field: PCBT: PCB temperature
+// @Field: Err: error flags
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -781,23 +777,6 @@ struct PACKED log_VER {
 // @Field: FMn: Minimum free space in write buffer in last time period
 // @Field: FMx: Maximum free space in write buffer in last time period
 // @Field: FAv: Average free space in write buffer in last time period
-
-// @LoggerMessage: DSTL
-// @Description: Deepstall Landing data
-// @Field: TimeUS: Time since system startup
-// @Field: Stg: Deepstall landing stage
-// @Field: THdg: Target heading
-// @Field: Lat: Landing point latitude
-// @Field: Lng: Landing point longitude
-// @Field: Alt: Landing point altitude
-// @Field: XT: Crosstrack error
-// @Field: Travel: Expected travel distance vehicle will travel from this point
-// @Field: L1I: L1 controller crosstrack integrator value
-// @Field: Loiter: wind estimate loiter angle flown
-// @Field: Des: Deepstall steering PID desired value
-// @Field: P: Deepstall steering PID Proportional response component
-// @Field: I: Deepstall steering PID Integral response component
-// @Field: D: Deepstall steering PID Derivative response component
 
 // @LoggerMessage: ERR
 // @Description: Specifically coded error messages
@@ -1248,6 +1227,7 @@ LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
+LOG_STRUCTURE_FROM_MOUNT \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
     { LOG_MAG_MSG, sizeof(log_MAG), \
@@ -1271,7 +1251,7 @@ LOG_STRUCTURE_FROM_AVOIDANCE \
       "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
-      "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000", true }, \
+      "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#---%dvAOO-", "F-000000000-", true }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS, true },  \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -1286,8 +1266,7 @@ LOG_STRUCTURE_FROM_ESC_TELEM \
       "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDE_MSG, sizeof(log_PID), \
       "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
-    { LOG_DSTL_MSG, sizeof(log_DSTL), \
-      "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" , true }, \
+LOG_STRUCTURE_FROM_LANDING \
 LOG_STRUCTURE_FROM_INERTIALSENSOR \
 LOG_STRUCTURE_FROM_DAL \
 LOG_STRUCTURE_FROM_NAVEKF2 \
@@ -1330,7 +1309,7 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "FILE",   "NIBZ",       "FileName,Offset,Length,Data", "----", "----" }, \
 LOG_STRUCTURE_FROM_AIS \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
-      "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s-sbb", "F-F--", true }, \
+      "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s#sbb", "F-F--", true }, \
     { LOG_VER_MSG, sizeof(log_VER), \
       "VER",   "QBHBBBBIZH", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ", "s---------", "F---------", false }, \
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
@@ -1358,6 +1337,7 @@ enum LogMessages : uint8_t {
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
     LOG_IDS_FROM_CAMERA,
+    LOG_IDS_FROM_MOUNT,
     LOG_TERRAIN_MSG,
     LOG_CSRV_MSG,
     LOG_IDS_FROM_ESC_TELEM,
@@ -1373,7 +1353,7 @@ enum LogMessages : uint8_t {
     LOG_PIDS_MSG,
     LOG_PIDN_MSG,
     LOG_PIDE_MSG,
-    LOG_DSTL_MSG,
+    LOG_IDS_FROM_LANDING,
     LOG_MAG_MSG,
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,

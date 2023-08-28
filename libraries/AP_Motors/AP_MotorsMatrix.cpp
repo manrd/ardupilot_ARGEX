@@ -168,7 +168,7 @@ void AP_MotorsMatrix::output_to_motors()
             // set motor output based on thrust requests
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    set_actuator_with_slew(_actuator[i], thrust_to_actuator(_thrust_rpyt_out[i]));
+                    set_actuator_with_slew(_actuator[i], thr_lin.thrust_to_actuator(_thrust_rpyt_out[i]));
                 }
             }
             break;
@@ -213,7 +213,7 @@ float AP_MotorsMatrix::boost_ratio(float boost_value, float normal_value) const
 void AP_MotorsMatrix::output_armed_stabilizing()
 {
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
+    const float compensation_gain = thr_lin.get_compensation_gain(); // compensation for battery voltage and altitude
 
     // pitch thrust input value, +/- 1.0
     const float roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
@@ -454,7 +454,7 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     }
 
     // check to see if thrust boost is using more throttle than _throttle_thrust_max
-    if ((_throttle_thrust_max * get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
+    if ((_throttle_thrust_max * thr_lin.get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
         _thrust_boost = false;
     }
 }
@@ -765,7 +765,6 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         break;
     default:
         // quad frame class does not support this frame type
-        _frame_type_string = "UNSUPPORTED";
         return false;
     }
     return true;
@@ -845,7 +844,6 @@ bool AP_MotorsMatrix::setup_hexa_matrix(motor_frame_type frame_type)
     }
     default:
         // hexa frame class does not support this frame type
-        _frame_type_string = "UNSUPPORTED";
         return false;
     } //hexa
     return true;
@@ -965,7 +963,6 @@ bool AP_MotorsMatrix::setup_octa_matrix(motor_frame_type frame_type)
     }
     default:
         // octa frame class does not support this frame type
-        _frame_type_string = "UNSUPPORTED";
         return false;
     } // octa frame type
     return true;
@@ -1088,7 +1085,6 @@ bool AP_MotorsMatrix::setup_octaquad_matrix(motor_frame_type frame_type)
     }
     default:
         // octaquad frame class does not support this frame type
-        _frame_type_string = "UNSUPPORTED";
         return false;
     } //octaquad
     return true;
@@ -1140,7 +1136,6 @@ bool AP_MotorsMatrix::setup_dodecahexa_matrix(motor_frame_type frame_type)
     }
     default:
         // dodeca-hexa frame class does not support this frame type
-        _frame_type_string = "UNSUPPORTED";
         return false;
     } //dodecahexa
     return true;
@@ -1293,7 +1288,6 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
 #endif //AP_MOTORS_FRAME_DECA_ENABLED
     default:
         // matrix doesn't support the configured class
-        _frame_class_string = "UNSUPPORTED";
         success = false;
         _mav_type = MAV_TYPE_GENERIC;
         break;
@@ -1302,6 +1296,9 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
     // normalise factors to magnitude 0.5
     normalise_rpy_factors();
 
+    if (!success) {
+        _frame_class_string = "UNSUPPORTED";
+    }
     set_initialised_ok(success);
 }
 

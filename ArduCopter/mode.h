@@ -2,6 +2,7 @@
 
 #include "Copter.h"
 #include <AP_Math/chirp.h>
+#include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
 class Parameters;
 class ParametersG2;
 
@@ -462,6 +463,7 @@ public:
     // pause continue in auto mode
     bool pause() override;
     bool resume() override;
+    bool paused() const;
 
     bool loiter_start();
     void rtl_start();
@@ -482,10 +484,6 @@ public:
     bool set_speed_down(float speed_down_cms) override;
 
     bool requires_terrain_failsafe() const override { return true; }
-
-    // return true if this flight mode supports user takeoff
-    //  must_nagivate is true if mode must also control horizontal position
-    virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
 
     void payload_place_start();
 
@@ -569,7 +567,7 @@ private:
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     void do_spline_wp(const AP_Mission::Mission_Command& cmd);
     void get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline);
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -607,7 +605,7 @@ private:
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_circle(const AP_Mission::Mission_Command& cmd);
     bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
-#if NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED == ENABLED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
@@ -960,6 +958,10 @@ private:
 class ModeGuided : public Mode {
 
 public:
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Copter;
+#endif
+
     // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return Number::GUIDED; }
@@ -1317,6 +1319,10 @@ public:
     bool get_wp(Location &loc) const override;
 
     bool use_pilot_yaw() const override;
+
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
 
     // RTL states
     enum class SubMode : uint8_t {
@@ -1717,6 +1723,7 @@ private:
 
 };
 
+#if AP_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {
 
 public:
@@ -1746,6 +1753,7 @@ protected:
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
+#endif
 
 class ModeZigZag : public Mode {        
 
@@ -1781,6 +1789,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; }
     bool is_autopilot() const override { return true; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
     // save current position as A or B.  If both A and B have been saved move to the one specified
     void save_or_move_to_destination(Destination ab_dest);

@@ -62,10 +62,6 @@
  #define HAL_BARO_FILTER_DEFAULT 0 // turned off by default
 #endif
 
-#if !defined(HAL_PROBE_EXTERNAL_I2C_BAROS) && !HAL_MINIMIZE_FEATURES
-#define HAL_PROBE_EXTERNAL_I2C_BAROS
-#endif
-
 #ifndef HAL_BARO_PROBE_EXT_DEFAULT
  #define HAL_BARO_PROBE_EXT_DEFAULT 0
 #endif
@@ -173,7 +169,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("_FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
-#if defined(HAL_PROBE_EXTERNAL_I2C_BAROS) || defined(AP_BARO_MSP_ENABLED)
+#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES || AP_BARO_MSP_ENABLED
     // @Param: _PROBE_EXT
     // @DisplayName: External barometers to probe
     // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on BARO_EXT_BUS. If BARO_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in BARO_EXT_BUS.
@@ -766,7 +762,7 @@ void AP_Baro::init(void)
 #endif
     }
 
-#ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
+#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
     _probe_i2c_barometers();
 #endif
 
@@ -984,6 +980,25 @@ void AP_Baro::update(void)
     }
 #endif
 }
+
+#ifdef HAL_BUILD_AP_PERIPH
+// calibration and alt check not valid for AP_Periph
+bool AP_Baro::healthy(uint8_t instance) const {
+    // If the requested instance was outside max instances it is not healthy (it doesn't exist)
+    if (instance >= BARO_MAX_INSTANCES) {
+        return false;
+    }
+    return sensors[instance].healthy;
+}
+#else
+bool AP_Baro::healthy(uint8_t instance) const {
+    // If the requested instance was outside max instances it is not healthy (it doesn't exist)
+    if (instance >= BARO_MAX_INSTANCES) {
+        return false;
+    }
+    return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated;
+}
+#endif
 
 /*
   update field elevation value
