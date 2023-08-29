@@ -43,7 +43,7 @@ extern const AP_HAL::HAL& hal;
 #define REG_238_DEVICE_ID     0x3f
 
 #ifndef DEFAULT_BATTMON_INA2XX_MAX_AMPS
-#define DEFAULT_BATTMON_INA2XX_MAX_AMPS 90.0
+#define DEFAULT_BATTMON_INA2XX_MAX_AMPS 130.0 // original 90.0
 #endif
 
 #ifndef HAL_BATTMON_INA2XX_BUS
