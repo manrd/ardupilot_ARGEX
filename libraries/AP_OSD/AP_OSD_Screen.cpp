@@ -2246,7 +2246,7 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%c---%c", SYMBOL(SYM_RNGFD), u_icon(DISTANCE));
     } else {
         const float distance = rangefinder->distance_orient(ROTATION_PITCH_270);
-        backend->write(x, y, false, "%c%4.1f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
+        backend->write(x, y, false, "%c%4.2f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
     }
 }
 
