@@ -36,7 +36,7 @@
 #include <AP_HAL_SITL/CANSocketIface.h>
 #endif
 
-#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES+1U))-1U)
+#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES))-1U)
 
 #include "i2c.h"
 #include <utility>
@@ -106,10 +106,6 @@ HAL_GPIO_PIN_TERMCAN1
 
 };
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
-
-#ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
-#endif
 
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
@@ -1091,7 +1087,7 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
 
 void AP_Periph_FW::processTx(void)
 {
-    for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&dronecan.canard)) != NULL;) {
+    for (CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&dronecan.canard)) != NULL;) {
         AP_HAL::CANFrame txmsg {};
         txmsg.dlc = AP_HAL::CANFrame::dataLengthToDlc(txf->data_len);
         memcpy(txmsg.data, txf->data, txf->data_len);
@@ -1101,7 +1097,8 @@ void AP_Periph_FW::processTx(void)
 #endif
         // push message with 1s timeout
         bool sent = true;
-        const uint64_t deadline = AP_HAL::micros64() + 1000000;
+        const uint64_t now_us = AP_HAL::micros64();
+        const uint64_t deadline = now_us + 1000000U;
         // try sending to all interfaces
         for (auto &_ins : instances) {
             if (_ins.iface == NULL) {
@@ -1118,7 +1115,21 @@ void AP_Periph_FW::processTx(void)
             }
     #endif
             if (_ins.iface->send(txmsg, deadline, 0) <= 0) {
-                sent = false;
+                /*
+                  We were not able to queue the frame for
+                  sending. Only mark the send as failing if the
+                  interface is active. We consider an interface as
+                  active if it has had a successful transmit in the
+                  last 2 seconds
+                 */
+                const auto *stats = _ins.iface->get_statistics();
+                if (stats == nullptr || now_us - stats->last_transmit_us < 2000000UL) {
+                    sent = false;
+                }
+            } else {
+#if CANARD_MULTI_IFACE
+                txf->iface_mask &= ~(1U<<_ins.index);
+#endif
             }
         }
         if (sent) {
